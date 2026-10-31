@@ -1,3 +1,16 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+@theme {
+  --color-canvas: #f3f5ef;
+  --color-ink: #18352b;
+  --color-forest: #1f5c46;
+  --color-muted: #607269;
+  --color-signal: #e6b34a;
+}
+
 :root {
   --font-display:
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
