@@ -65,6 +65,22 @@ The design is **not migration-ready**. In particular, volunteer affiliation and 
 5. The ERD puts a single `organization_id` on the profile and separately notes affiliation cardinality is pending. Do not mistake that proposed FK for an approved multi-organization model.
 6. `volunteer_disaster_types` is in the proposed table set but has no confirmed product purpose and could be misused as an extra matching filter. Record its approved non-matching purpose or remove it from the final schema.
 
+## Draft migration drift
+
+The local migration `supabase/migrations/20261031134522_phase_02_core_schema.sql` is an unapplied draft and is not aligned with the logical ERD/dictionary. Before approving it, reconcile at least these differences:
+
+| Area | Logical ERD/dictionary | Physical migration draft |
+|---|---|---|
+| Disaster type key | `smallint` | `uuid` |
+| Volunteer organization affiliation | Optional `organization_id` relationship | No organization field on `volunteer_profiles` |
+| Local-area knowledge | Proposed boolean field | No column in the migration |
+| Invitation state | Dictionary currently describes non-null status | `response_status` is nullable and has no state constraint |
+| Organization request state | Dictionary currently describes non-null status | `response_status` is nullable and has no state constraint |
+| Recommendation uniqueness | Dictionary treats duplicate prevention as pending | Migration enforces unique `(matching_report_id, volunteer_profile_id)` and a composite target for invitation consistency |
+| Notification attempts | Dictionary describes provider/status/idempotency as future fields | Migration currently has parent IDs, channel, and timestamp only, with XOR-parent and channel checks |
+
+These are not approved resolutions. Do not change the logical model to match the draft or alter the migration to match the logical model until the schema baseline and relevant product decisions are approved.
+
 ## Unresolved decisions that affect schema
 
 These are blockers for final column, relationship, constraint, policy, or retention design:

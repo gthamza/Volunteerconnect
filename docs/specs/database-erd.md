@@ -7,6 +7,8 @@
 
 This document describes the proposed application data model before migrations are written. It is a logical ERD, not an approved physical schema. The table set follows Phase 02's proposal; fields and constraints affected by unresolved product decisions are intentionally left open. No application tables or migrations are created by this document.
 
+**Implementation note:** A separate physical schema migration currently exists as an unapplied draft. Its column types and fields do not fully match this logical diagram. Do not use the migration as proof that this ERD has been implemented. See the [design review](./database-design-review.md) and [Phase 02 acceptance review](./phase-02-acceptance-review.md).
+
 ## ERD
 
 ```mermaid

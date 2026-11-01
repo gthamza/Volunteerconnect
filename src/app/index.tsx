@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { styled } from "nativewind";
@@ -15,14 +15,13 @@ const StyledSafeAreaView = styled(SafeAreaView);
 
 function ReliefMark() {
   return (
-    <View
+    <Image
+      source={require("../../assets/images/icon.png")}
       accessibilityLabel="VolunteerConnect relief mark"
       accessibilityRole="image"
-      className="h-11 w-11 items-center justify-center rounded-2xl bg-signal"
-    >
-      <View className="h-6 w-2 rounded-full bg-forest" />
-      <View className="absolute h-2 w-6 rounded-full bg-forest" />
-    </View>
+      className="h-12 w-12"
+      resizeMode="contain"
+    />
   );
 }
 

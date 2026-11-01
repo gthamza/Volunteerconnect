@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import { useAuth, useClerk, useOrganizationList, useUser } from "@clerk/expo";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -82,62 +82,75 @@ export default function HomeScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-canvas dark:bg-[#111b16]">
       <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 py-5" showsVerticalScrollIndicator={false}>
-        <View className="flex-row items-center justify-between gap-4">
-          <View className="flex-1">
-            <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-forest dark:text-[#b9ddc4]">VolunteerConnect</Text>
-            <Text className="mt-2 text-3xl font-bold tracking-[-0.7px] text-ink dark:text-[#eff4ee]">Welcome, {displayName}</Text>
-            <Text className="mt-1 text-sm leading-5 text-muted dark:text-[#b4c2b8]">Your relief coordination space</Text>
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-3">
+            <Image
+              source={require("../../../assets/images/icon.png")}
+              accessibilityLabel="VolunteerConnect logo"
+              accessibilityRole="image"
+              className="h-12 w-12"
+              resizeMode="contain"
+            />
+            <View>
+              <Text className="text-sm font-bold tracking-wide text-ink dark:text-[#eff4ee]">VolunteerConnect</Text>
+              <Text className="mt-0.5 text-xs text-muted dark:text-[#b4c2b8]">Relief, coordinated.</Text>
+            </View>
           </View>
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-[#e4ebe2] dark:bg-[#26372d]">
-            <Text className="text-base font-bold text-forest dark:text-[#b9ddc4]">{initials || "VC"}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open profile" className="h-11 w-11 items-center justify-center rounded-full border border-forest/15 bg-white dark:border-white/15 dark:bg-[#202e26]" onPress={() => router.push("/profile")}>
+            <Text className="text-sm font-bold text-forest dark:text-[#b9ddc4]">{initials || "VC"}</Text>
+          </Pressable>
+        </View>
+
+        <View className="overflow-hidden rounded-[28px] bg-forest px-6 pb-6 pt-7">
+          <View className="absolute -right-12 -top-12 h-44 w-44 rounded-full border border-white/10" />
+          <View className="absolute -right-1 top-14 h-24 w-24 rounded-full border border-white/10" />
+          <View className="mb-5 self-start rounded-full bg-white/10 px-3 py-1.5">
+            <Text className="text-[11px] font-bold uppercase tracking-widest text-[#d8e8d9]">Your relief workspace</Text>
+          </View>
+          <Text className="text-[30px] font-bold leading-9 tracking-tight text-white">Welcome, {displayName}.</Text>
+          <Text className="mt-3 max-w-[290px] text-sm leading-6 text-[#dce8d8]">Prepared people make a stronger response. Manage your account and organization access here.</Text>
+          <View className="mt-6 h-px bg-white/15" />
+          <View className="mt-4 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <View className="h-2 w-2 rounded-full bg-[#e6b34a]" />
+              <Text className="text-xs font-medium text-white">{orgId ? "Organization workspace active" : "Independent account"}</Text>
+            </View>
+            <Text className="text-xs font-semibold text-[#d8e8d9]">Pakistan</Text>
           </View>
         </View>
 
-        <View className="overflow-hidden rounded-[28px] bg-forest p-6">
-          <View className="absolute -right-8 -top-10 h-40 w-40 rounded-full border border-white/10" />
-          <View className="absolute -right-1 top-5 h-24 w-24 rounded-full border border-white/10" />
-          <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-[#c9d9cb]">Ready when communities need you</Text>
-          <Text className="mt-3 max-w-[280px] text-2xl font-bold leading-8 text-white">A stronger response starts with people working together.</Text>
-          <Text className="mt-3 max-w-[280px] text-sm leading-5 text-[#dce8d8]">Use your workspace to manage your VolunteerConnect account and organization access.</Text>
-        </View>
-
-        <View className="flex-row gap-3">
-          <Pressable
-            accessibilityRole="button"
-            className="min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-forest/20 bg-white px-3 dark:border-white/15 dark:bg-[#202e26]"
-            onPress={() => router.push("/profile")}
-          >
-            <Text className="font-semibold text-forest dark:text-[#b9ddc4]">Profile</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            className="min-h-12 flex-1 items-center justify-center rounded-xl border border-forest/20 bg-white px-3 dark:border-white/15 dark:bg-[#202e26]"
-            onPress={() => router.push("/settings")}
-          >
-            <Text className="font-semibold text-forest dark:text-[#b9ddc4]">Settings</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: isSigningOut }}
-            className="min-h-12 items-center justify-center rounded-xl border border-red-700/20 bg-white px-4 dark:border-red-300/20 dark:bg-[#202e26]"
-            disabled={isSigningOut}
-            onPress={() => void handleSignOut()}
-          >
-            {isSigningOut ? <ActivityIndicator accessibilityLabel="Signing out" /> : (
-              <Text className="font-semibold text-red-700 dark:text-red-300">Sign out</Text>
-            )}
+        <View className="gap-3">
+          <View className="flex-row items-end justify-between">
+            <View>
+              <Text className="text-xl font-bold text-ink dark:text-[#eff4ee]">Quick access</Text>
+              <Text className="mt-1 text-sm text-muted dark:text-[#b4c2b8]">Manage your account and workspace</Text>
+            </View>
+          </View>
+          <View className="flex-row gap-3">
+            <Pressable accessibilityRole="button" className="min-h-[104px] flex-1 justify-between rounded-2xl border border-forest/10 bg-white p-4 dark:border-white/10 dark:bg-[#202e26]" onPress={() => router.push("/organization")}>
+              <View className="h-8 w-8 items-center justify-center rounded-xl bg-[#e4ebe2] dark:bg-[#26372d]"><Text className="font-bold text-forest dark:text-[#b9ddc4]">⌂</Text></View>
+              <View><Text className="font-bold text-ink dark:text-[#eff4ee]">Organizations</Text><Text className="mt-0.5 text-xs text-muted dark:text-[#b4c2b8]">Membership & access</Text></View>
+            </Pressable>
+            <Pressable accessibilityRole="button" className="min-h-[104px] flex-1 justify-between rounded-2xl border border-forest/10 bg-white p-4 dark:border-white/10 dark:bg-[#202e26]" onPress={() => router.push("/settings")}>
+              <View className="h-8 w-8 items-center justify-center rounded-xl bg-[#f4ecd9] dark:bg-[#3a3325]"><Text className="font-bold text-[#8a6722] dark:text-[#e6c980]">◐</Text></View>
+              <View><Text className="font-bold text-ink dark:text-[#eff4ee]">Appearance</Text><Text className="mt-0.5 text-xs text-muted dark:text-[#b4c2b8]">Theme preferences</Text></View>
+            </Pressable>
+          </View>
+          <Pressable accessibilityRole="button" accessibilityState={{ disabled: isSigningOut }} className="min-h-12 flex-row items-center justify-between rounded-2xl border border-forest/10 bg-white px-4 dark:border-white/10 dark:bg-[#202e26]" disabled={isSigningOut} onPress={() => void handleSignOut()}>
+            <Text className="font-semibold text-ink dark:text-[#eff4ee]">Sign out</Text>
+            {isSigningOut ? <ActivityIndicator accessibilityLabel="Signing out" /> : <Text className="text-lg text-muted dark:text-[#b4c2b8]">›</Text>}
           </Pressable>
         </View>
 
         <View className="gap-1">
-          <Text className="text-xl font-bold text-ink dark:text-[#eff4ee]">Your workspace</Text>
-          <Text className="text-sm leading-5 text-muted dark:text-[#b4c2b8]">Organization access and invitations appear here.</Text>
+          <Text className="text-xl font-bold text-ink dark:text-[#eff4ee]">Workspace access</Text>
+          <Text className="text-sm leading-5 text-muted dark:text-[#b4c2b8]">Switch organizations, manage memberships, or continue independently.</Text>
           <Pressable
             accessibilityRole="button"
             className="mt-2 min-h-11 self-start justify-center rounded-xl bg-forest px-4"
             onPress={() => router.push("/organization")}
           >
-            <Text className="font-semibold text-white">Organization access</Text>
+            <Text className="font-semibold text-white">Manage organization access</Text>
           </Pressable>
         </View>
 

@@ -7,6 +7,8 @@
 
 This dictionary describes a proposed logical database. It is not a migration specification. Types and constraints marked **proposed** need schema review before migration; items marked **TBD** depend on product decisions and must not be guessed. No application tables, enums, policies, triggers, or migrations are created by this document.
 
+**Implementation note:** The repository contains an unapplied physical migration draft whose columns and types do not fully match this logical dictionary. This file is not a description of the current connected database or an approved migration target. Reconcile it with the approved ERD and migration before schema approval; see the [Phase 02 acceptance review](./phase-02-acceptance-review.md).
+
 ## Conventions
 
 - UUID primary keys are proposed for application entities; `gen_random_uuid()` is a possible database default, subject to migration review.
