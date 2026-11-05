@@ -4,11 +4,11 @@ import { loadConfig } from "./config/env.js";
 try {
   const config = loadConfig();
   const app = createApp(config);
-  if (!config.clerkSecretKey) {
+  if (!config.clerkSecretKey || !config.clerkPublishableKey) {
     console.warn(JSON.stringify({
       level: "warn",
       event: "clerk_auth_not_configured",
-      message: "Protected API routes require CLERK_SECRET_KEY.",
+      message: "Protected API routes require CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY.",
     }));
   }
   if (!config.supabaseUrl) {

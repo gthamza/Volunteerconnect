@@ -29,6 +29,10 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next
       path: req.path,
       errorName: error instanceof Error ? error.name : "UnknownError",
       errorType: getErrorType(error),
+      providerCode: getProviderCode(error),
+      causeCode: getCauseCode(error),
+      diagnosticVersion: "volunteer-api-diagnostic-1",
+      ...(process.env.NODE_ENV !== "production" ? { errorMessage: getErrorMessage(error) } : {}),
     }));
   }
 
@@ -36,10 +40,22 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next
     ? { code: "REQUEST_ERROR", message: "The request could not be completed." }
     : { code: "INTERNAL_SERVER_ERROR", message: "An unexpected error occurred." });
   res.status(status).json({
-    error: response,
+    error: getSafeClientError(error, response),
     ...(requestId ? { requestId } : {}),
   });
 };
+
+function getSafeClientError(error: unknown, fallback: { code: string; message: string }) {
+  if (
+    error && typeof error === "object" &&
+    "name" in error && error.name === "VolunteerApiError" &&
+    "code" in error && typeof error.code === "string" &&
+    "message" in error && typeof error.message === "string"
+  ) {
+    return { code: error.code, message: error.message };
+  }
+  return fallback;
+}
 
 function getHttpStatus(error: unknown): number {
   if (!error || typeof error !== "object") return 500;
@@ -52,4 +68,20 @@ function getHttpStatus(error: unknown): number {
 function getErrorType(error: unknown): string | undefined {
   if (!error || typeof error !== "object" || !("type" in error)) return undefined;
   return typeof error.type === "string" ? error.type : undefined;
+}
+
+function getProviderCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object" || !("providerCode" in error)) return undefined;
+  return typeof error.providerCode === "string" ? error.providerCode : undefined;
+}
+
+function getCauseCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object" || !("cause" in error)) return undefined;
+  const cause = error.cause;
+  if (!cause || typeof cause !== "object" || !("code" in cause)) return undefined;
+  return typeof cause.code === "string" ? cause.code : undefined;
+}
+
+function getErrorMessage(error: unknown): string | undefined {
+  return error instanceof Error ? error.message : undefined;
 }

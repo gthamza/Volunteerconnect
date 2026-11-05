@@ -23,3 +23,9 @@
 - [Unresolved Phase 02 decisions](./specs/phase-02-open-decisions.md)
 
 Phase 02 is not complete. See the acceptance review before applying migrations or beginning Phase 03.
+
+## Phase 03 — Volunteer profile screens
+
+- [Phase 03 specification](./specs/phase-03.md)
+- [Phase 03 API contract](./specs/phase-03-api.md)
+- [Phase 03 screen implementation notes](./specs/phase-03-mobile.md)

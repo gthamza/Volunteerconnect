@@ -16,6 +16,9 @@ export function createRequireAuthenticatedUser(
     }
 
     res.locals.userId = auth.userId;
+    // These values come from Clerk's verified session, never from the request body.
+    res.locals.organizationId = auth.orgId ?? null;
+    res.locals.organizationRole = auth.orgRole ?? null;
     next();
   };
 }

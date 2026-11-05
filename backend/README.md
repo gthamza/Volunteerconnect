@@ -1,11 +1,11 @@
 # VolunteerConnect backend
 
-Express + TypeScript API foundation for Phase 02.
+Express + TypeScript backend for the Phase 02 API foundation and Phase 03 volunteer self-service APIs.
 
 ## Local setup
 
 1. From this directory, copy `.env.example` to `.env`. Set the Supabase URL and server-only service-role key to enable database connectivity and a healthy readiness response. The server can start without them in development, but `/health` will return `503` until Supabase is configured.
-2. Set `CLERK_SECRET_KEY` in `.env` to the secret key for the same Clerk instance used by the Expo app.
+2. Set `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in `.env` to the matching keys for the same Clerk instance used by the Expo app. The publishable key should match `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` in the mobile environment.
 3. Run `npm install`.
 4. Run `npm run dev`.
 5. Check `GET http://localhost:3000/health`. It returns `{ "status": "ok", "checks": { "database": "ok" } }` when the backend can query Supabase, or `503` with an unavailable database status otherwise.
@@ -23,8 +23,10 @@ Clerk middleware verifies incoming session tokens from the `Authorization: Beare
 `GET /auth/me` is a protected verification endpoint: it returns the verified Clerk user ID, returns `401` without a valid signed-in session, and returns `503` when Clerk is not configured. Feature routes should use `requireAuthenticatedUser` and then apply their feature-specific authorization checks. Keep `/health` public for service health checks.
 The server Supabase client uses a service-role credential, which bypasses RLS;
 use it only after the backend has enforced the relevant identity, membership,
-organization registration, and ownership checks. No data operations are exposed
-in this foundation phase.
+organization registration, and ownership checks. Phase 03 volunteer self-service
+routes are documented in [the API spec](../docs/specs/phase-03-api.md). Organization
+volunteer reads remain denied until affiliation, organization claim verification,
+member permissions, and profile visibility rules are approved.
 
 `CORS_ORIGINS` accepts a comma-separated allowlist of exact web origins. Native
 clients that do not send an `Origin` header are allowed. An empty allowlist
@@ -33,7 +35,7 @@ be explicitly configured.
 
 ## Tests
 
-- Run backend middleware and API foundation unit tests with `npm test`.
+- Run backend middleware and volunteer API integration tests with `npm test`.
 - Run `npm run typecheck` to type-check both backend source and its tests.
 - Run database pgTAP tests with `supabase test db` from the repository root after a local Supabase database has been started and the Phase 02 schema is installed.
 

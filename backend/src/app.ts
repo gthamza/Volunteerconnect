@@ -1,5 +1,6 @@
-import { clerkMiddleware } from "@clerk/express";
+import { clerkClient, clerkMiddleware } from "@clerk/express";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { RequestHandler } from "express";
 import cors from "cors";
 import express from "express";
 import type { BackendConfig } from "./config/env.js";
@@ -8,10 +9,11 @@ import { requireAuthenticatedUser } from "./middleware/authentication.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import { createHealthRouter } from "./routes/health.js";
+import { createVolunteerRouter } from "./routes/volunteers.js";
 
 export function createApp(
   config: BackendConfig,
-  options?: { supabaseClient?: SupabaseClient | null },
+  options?: { supabaseClient?: SupabaseClient | null; testAuthenticationMiddleware?: RequestHandler },
 ) {
   const app = express();
   const supabase: SupabaseClient | undefined = options && "supabaseClient" in options
@@ -19,8 +21,28 @@ export function createApp(
     : config.supabaseUrl && config.supabaseServiceRoleKey
       ? createServerSupabaseClient(config)
       : undefined;
+  const volunteerRouter = createVolunteerRouter(() => {
+    if (!supabase) throw new Error("Supabase is not configured.");
+    return supabase;
+  }, requireAuthenticatedUser, async (organizationId) => {
+    const memberships: Awaited<ReturnType<typeof clerkClient.organizations.getOrganizationMembershipList>>["data"] = [];
+    let offset = 0;
+    while (true) {
+      const page = await clerkClient.organizations.getOrganizationMembershipList({ organizationId, limit: 100, offset });
+      memberships.push(...page.data);
+      if (memberships.length >= page.totalCount || page.data.length === 0) break;
+      offset += page.data.length;
+    }
+    return memberships;
+  });
 
   app.disable("x-powered-by");
+  if (!options?.testAuthenticationMiddleware && config.clerkSecretKey && config.clerkPublishableKey) {
+    app.use(clerkMiddleware({
+      secretKey: config.clerkSecretKey,
+      publishableKey: config.clerkPublishableKey,
+    }));
+  }
   app.use(requestLogger);
   app.use(cors({
     origin(origin, callback) {
@@ -42,12 +64,12 @@ export function createApp(
   // Health is public and must remain useful if Clerk is misconfigured or unavailable.
   app.use("/health", createHealthRouter(supabase));
 
-  if (config.clerkSecretKey) {
-    app.use(clerkMiddleware({ secretKey: config.clerkSecretKey }));
+  if (options?.testAuthenticationMiddleware) {
+    app.use(options.testAuthenticationMiddleware);
   }
 
   app.get("/auth/me", (req, res, next) => {
-    if (!config.clerkSecretKey) {
+    if ((!config.clerkSecretKey || !config.clerkPublishableKey) && !options?.testAuthenticationMiddleware) {
       res.status(503).json({
         error: { code: "AUTHENTICATION_UNAVAILABLE", message: "Clerk authentication is not configured." },
       });
@@ -57,6 +79,22 @@ export function createApp(
   }, (_req, res) => {
     res.status(200).json({ userId: res.locals.userId });
   });
+
+  app.use("/api/v1", (req, res, next) => {
+    if ((!config.clerkSecretKey || !config.clerkPublishableKey) && !options?.testAuthenticationMiddleware) {
+      res.status(503).json({
+        error: { code: "AUTHENTICATION_UNAVAILABLE", message: "Clerk authentication is not configured." },
+      });
+      return;
+    }
+    if (!supabase) {
+      res.status(503).json({
+        error: { code: "DATABASE_UNAVAILABLE", message: "Database access is not configured." },
+      });
+      return;
+    }
+    next();
+  }, volunteerRouter);
 
   app.use((_req, res) => {
     res.status(404).json({

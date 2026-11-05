@@ -8,6 +8,11 @@ import { ThemeProvider } from "../features/theme/theme-provider";
 import { ClerkTokenBridge } from "../services/supabase/clerk-token-bridge";
 import { AppErrorBoundary } from "../components/app-error-boundary";
 import { debugLog, debugWarn } from "../utils/debug-log";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
+});
 
 function RouteDiagnostics() {
   const pathname = usePathname();
@@ -34,6 +39,7 @@ debugLog("BOOT", "Root module loaded", {
 
 export default function RootLayout() {
   return (
+    <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <ClerkProvider publishableKey={clerkPublishableKey} tokenCache={tokenCache}>
         <ClerkTokenBridge>
@@ -44,5 +50,6 @@ export default function RootLayout() {
         </ClerkTokenBridge>
       </ClerkProvider>
     </ThemeProvider>
+    </QueryClientProvider>
   );
 }

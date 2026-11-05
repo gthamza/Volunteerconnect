@@ -1,9 +1,13 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
+
+dotenv.config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  CLERK_PUBLISHABLE_KEY: z.string().min(1).optional(),
   CLERK_SECRET_KEY: z.string().min(1).optional(),
   SUPABASE_URL: z.string().url("SUPABASE_URL must be a valid URL").optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
@@ -23,8 +27,16 @@ const envSchema = z.object({
       message: "is required when SUPABASE_SERVICE_ROLE_KEY is configured",
     });
   }
+  if (Boolean(config.CLERK_PUBLISHABLE_KEY) !== Boolean(config.CLERK_SECRET_KEY)) {
+    context.addIssue({
+      code: "custom",
+      path: [config.CLERK_PUBLISHABLE_KEY ? "CLERK_SECRET_KEY" : "CLERK_PUBLISHABLE_KEY"],
+      message: "both Clerk API keys must be configured together",
+    });
+  }
   if (config.NODE_ENV === "production") {
     for (const [key, value] of [
+      ["CLERK_PUBLISHABLE_KEY", config.CLERK_PUBLISHABLE_KEY],
       ["CLERK_SECRET_KEY", config.CLERK_SECRET_KEY],
       ["SUPABASE_URL", config.SUPABASE_URL],
       ["SUPABASE_SERVICE_ROLE_KEY", config.SUPABASE_SERVICE_ROLE_KEY],
@@ -39,6 +51,7 @@ const envSchema = z.object({
 export type BackendConfig = {
   nodeEnv: "development" | "test" | "production";
   port: number;
+  clerkPublishableKey?: string;
   clerkSecretKey?: string;
   supabaseUrl?: string;
   supabaseServiceRoleKey?: string;
@@ -59,6 +72,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): BackendConf
   return {
     nodeEnv: parsed.data.NODE_ENV,
     port: parsed.data.PORT,
+    clerkPublishableKey: parsed.data.CLERK_PUBLISHABLE_KEY,
     clerkSecretKey: parsed.data.CLERK_SECRET_KEY,
     supabaseUrl: parsed.data.SUPABASE_URL,
     supabaseServiceRoleKey: parsed.data.SUPABASE_SERVICE_ROLE_KEY,

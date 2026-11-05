@@ -8,6 +8,7 @@ Keep mobile and backend environments separate. Never put the Supabase service-ro
 |---|---:|---|
 | `NODE_ENV` | No; defaults to `development` | Runtime mode: `development`, `test`, or `production`. |
 | `PORT` | No; defaults to `3000` | HTTP listening port, 1–65535. |
+| `CLERK_PUBLISHABLE_KEY` | Required with Clerk authentication; required in production | Public Clerk instance key passed to Express middleware. It must match the Expo app's `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`. |
 | `CLERK_SECRET_KEY` | Required in production | Server credential used by `@clerk/express` to verify Clerk sessions. Use a key from the same Clerk instance as the mobile app. |
 | `SUPABASE_URL` | Required in production | Supabase project URL. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required in production | Server-only privileged database API key. It bypasses RLS and must only be used after backend authorization. |

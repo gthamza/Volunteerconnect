@@ -36,7 +36,13 @@
       ],
       "expo-asset",
       "expo-secure-store",
-      "@clerk/expo"
+      "@clerk/expo",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow VolunteerConnect to use your location once to set the location on your volunteer profile."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
