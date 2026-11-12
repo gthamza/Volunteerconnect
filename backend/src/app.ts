@@ -4,16 +4,23 @@ import type { RequestHandler } from "express";
 import cors from "cors";
 import express from "express";
 import type { BackendConfig } from "./config/env.js";
+import { ApiError } from "./lib/api-error.js";
 import { createServerSupabaseClient } from "./lib/supabase.js";
 import { requireAuthenticatedUser } from "./middleware/authentication.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import { createHealthRouter } from "./routes/health.js";
 import { createVolunteerRouter } from "./routes/volunteers.js";
+import { createTaskRouter, type TaskAssignmentReadiness, type TaskOrganizationAuthorizer } from "./routes/tasks.js";
 
 export function createApp(
   config: BackendConfig,
-  options?: { supabaseClient?: SupabaseClient | null; testAuthenticationMiddleware?: RequestHandler },
+  options?: {
+    supabaseClient?: SupabaseClient | null;
+    testAuthenticationMiddleware?: RequestHandler;
+    taskOrganizationAuthorizer?: TaskOrganizationAuthorizer;
+    taskAssignmentReadiness?: TaskAssignmentReadiness;
+  },
 ) {
   const app = express();
   const supabase: SupabaseClient | undefined = options && "supabaseClient" in options
@@ -21,10 +28,7 @@ export function createApp(
     : config.supabaseUrl && config.supabaseServiceRoleKey
       ? createServerSupabaseClient(config)
       : undefined;
-  const volunteerRouter = createVolunteerRouter(() => {
-    if (!supabase) throw new Error("Supabase is not configured.");
-    return supabase;
-  }, requireAuthenticatedUser, async (organizationId) => {
+  const getOrganizationMemberships = async (organizationId: string) => {
     const memberships: Awaited<ReturnType<typeof clerkClient.organizations.getOrganizationMembershipList>>["data"] = [];
     let offset = 0;
     while (true) {
@@ -34,7 +38,37 @@ export function createApp(
       offset += page.data.length;
     }
     return memberships;
+  };
+  const getSupabase = () => {
+    if (!supabase) throw new Error("Supabase is not configured.");
+    return supabase;
+  };
+  const authorizeTaskOrganization: TaskOrganizationAuthorizer = options?.taskOrganizationAuthorizer ?? (async ({ clerkOrganizationId, clerkRole }) => {
+    // Task management is currently limited to Clerk organization admins.
+    // Resolve the tenant from the server-side organizations table; never trust
+    // an organization ID supplied by the client.
+    if (clerkRole !== "org:admin") {
+      throw new ApiError(403, "ORGANIZATION_PERMISSION_REQUIRED", "Only organization admins can manage organization tasks.");
+    }
+    const { data, error } = await getSupabase()
+      .from("organizations")
+      .select("id")
+      .eq("clerk_organization_id", clerkOrganizationId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data || typeof data.id !== "string") {
+      throw new ApiError(403, "ORGANIZATION_NOT_CONFIGURED", "This organization is not configured in VolunteerConnect.");
+    }
+    return { id: data.id };
   });
+  const volunteerRouter = createVolunteerRouter(getSupabase, requireAuthenticatedUser, getOrganizationMemberships);
+  const taskRouter = createTaskRouter(
+    getSupabase,
+    requireAuthenticatedUser,
+    getOrganizationMemberships,
+    authorizeTaskOrganization,
+    options?.taskAssignmentReadiness,
+  );
 
   app.disable("x-powered-by");
   if (!options?.testAuthenticationMiddleware && config.clerkSecretKey && config.clerkPublishableKey) {
@@ -94,7 +128,7 @@ export function createApp(
       return;
     }
     next();
-  }, volunteerRouter);
+  }, volunteerRouter, taskRouter);
 
   app.use((_req, res) => {
     res.status(404).json({

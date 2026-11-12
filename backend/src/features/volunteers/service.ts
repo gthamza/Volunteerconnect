@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { OrganizationMembership } from "@clerk/express";
 import type { AddDisasterTypesInput, AddSkillsInput, UpdateProfileInput } from "./schemas.js";
+import { ApiError } from "../../lib/api-error.js";
+import { readPostgisPoint, toPostgisPointWkt } from "../../lib/geography.js";
 
 const SUPPORTED_DISASTERS = ["Flood", "Earthquake"] as const;
 
-export class VolunteerApiError extends Error {
-  constructor(readonly status: number, readonly code: string, message: string) {
-    super(message);
+export class VolunteerApiError extends ApiError {
+  constructor(status: number, code: string, message: string) {
+    super(status, code, message);
     this.name = "VolunteerApiError";
   }
 }
@@ -18,35 +20,6 @@ type ProfileRow = {
   created_at: string;
   updated_at: string;
 };
-
-type VolunteerLocation = { latitude: number; longitude: number };
-
-function toVolunteerLocation(value: unknown): VolunteerLocation | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value !== "string") throw new Error("Volunteer location could not be read.");
-  const wkt = /^(?:SRID=4326;)?POINT\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)$/i.exec(value);
-  if (wkt) {
-    const longitude = Number(wkt[1]);
-    const latitude = Number(wkt[2]);
-    if (Number.isFinite(latitude) && Number.isFinite(longitude)) return { latitude, longitude };
-  }
-  const hex = value.startsWith("\\x") ? value.slice(2) : value;
-  if (!/^[0-9a-f]+$/i.test(hex) || hex.length < 50) throw new Error("Volunteer location could not be read.");
-  const bytes = Buffer.from(hex, "hex");
-  const littleEndian = bytes[0] === 1;
-  if (!littleEndian && bytes[0] !== 0) throw new Error("Volunteer location could not be read.");
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const type = view.getUint32(1, littleEndian);
-  const hasSrid = (type & 0x20000000) !== 0;
-  const baseType = type & 0x0fffffff;
-  const coordinateOffset = hasSrid ? 9 : 5;
-  if (baseType !== 1 || bytes.length < coordinateOffset + 16) throw new Error("Volunteer location could not be read.");
-  if (hasSrid && view.getUint32(5, littleEndian) !== 4326) throw new Error("Volunteer location has an unsupported coordinate system.");
-  const longitude = view.getFloat64(coordinateOffset, littleEndian);
-  const latitude = view.getFloat64(coordinateOffset + 8, littleEndian);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) throw new Error("Volunteer location could not be read.");
-  return { latitude, longitude };
-}
 
 function failDatabase(error: unknown): never {
   // Keep provider messages and SQL details out of API responses and logs.
@@ -99,7 +72,7 @@ async function profileResponse(supabase: SupabaseClient, userId: string) {
   const disasterTypes = disasterRows.flatMap((row) => row.disaster_type ? [row.disaster_type] : []);
   return {
     id: profile.id,
-    location: toVolunteerLocation(profile.location),
+    location: readPostgisPoint(profile.location),
     localAreaKnowledge: profile.local_area_knowledge,
     createdAt: profile.created_at,
     updatedAt: profile.updated_at,
@@ -143,7 +116,7 @@ export async function updateVolunteerProfile(
   if (input.location !== undefined) {
     update.location = input.location === null
       ? null
-      : `SRID=4326;POINT(${input.location.longitude} ${input.location.latitude})`;
+      : toPostgisPointWkt(input.location);
   }
   const result = await supabase.from("volunteer_profiles")
     .update(update)

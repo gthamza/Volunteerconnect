@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import { ApiError } from "../lib/api-error.js";
 
 const clientErrorResponses: Record<number, { code: string; message: string }> = {
   400: { code: "BAD_REQUEST", message: "The request could not be parsed." },
@@ -46,12 +47,7 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next
 };
 
 function getSafeClientError(error: unknown, fallback: { code: string; message: string }) {
-  if (
-    error && typeof error === "object" &&
-    "name" in error && error.name === "VolunteerApiError" &&
-    "code" in error && typeof error.code === "string" &&
-    "message" in error && typeof error.message === "string"
-  ) {
+  if (error instanceof ApiError) {
     return { code: error.code, message: error.message };
   }
   return fallback;

@@ -1,6 +1,6 @@
 # VolunteerConnect backend
 
-Express + TypeScript backend for the Phase 02 API foundation and Phase 03 volunteer self-service APIs.
+Express + TypeScript backend for the Phase 02 API foundation, Phase 03 volunteer APIs, and Phase 04 task APIs.
 
 ## Local setup
 
@@ -23,10 +23,13 @@ Clerk middleware verifies incoming session tokens from the `Authorization: Beare
 `GET /auth/me` is a protected verification endpoint: it returns the verified Clerk user ID, returns `401` without a valid signed-in session, and returns `503` when Clerk is not configured. Feature routes should use `requireAuthenticatedUser` and then apply their feature-specific authorization checks. Keep `/health` public for service health checks.
 The server Supabase client uses a service-role credential, which bypasses RLS;
 use it only after the backend has enforced the relevant identity, membership,
-organization registration, and ownership checks. Phase 03 volunteer self-service
-routes are documented in [the API spec](../docs/specs/phase-03-api.md). Organization
-volunteer reads remain denied until affiliation, organization claim verification,
-member permissions, and profile visibility rules are approved.
+organization registration, and ownership checks. See the [Phase 03 volunteer API](../docs/specs/phase-03-api.md)
+and [Phase 04 task API](../docs/specs/phase-04-api.md). Task routes require a
+live Clerk organization membership with the `org:admin` role and a matching
+internal organization record. That record only links a Clerk workspace; it is
+not official organization verification. The verification policy remains
+pending. Organization volunteer reads remain limited to the current Clerk
+membership roster and approved profile fields.
 
 `CORS_ORIGINS` accepts a comma-separated allowlist of exact web origins. Native
 clients that do not send an `Origin` header are allowed. An empty allowlist

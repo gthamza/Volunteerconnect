@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { styled } from "nativewind";
 import { debugError, debugLog } from "../../utils/debug-log";
 import { OrganizationWorkspace } from "../../features/organizations/organization-workspace";
+import { OrganizationTaskDashboard } from "../../features/tasks/organization-task-dashboard";
 
 const StyledSafeAreaView = styled(SafeAreaView);
 
@@ -155,6 +156,7 @@ export default function HomeScreen() {
         </View>
 
         {orgId ? <OrganizationWorkspace /> : null}
+        {orgId ? <OrganizationTaskDashboard organizationId={orgId} /> : null}
 
         <View className="gap-3">
           <View className="mb-1">
